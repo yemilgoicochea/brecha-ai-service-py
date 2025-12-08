@@ -85,17 +85,6 @@ jobs:
             --set-env-vars=ENVIRONMENT=${{ contains(github.ref_name, 'main') && 'production' || 'development' }},LOG_LEVEL=${{ contains(github.ref_name, 'main') && 'INFO' || 'DEBUG' }},ALLOWED_ORIGINS=*,GEMINI_MAX_RETRIES=${{ contains(github.ref_name, 'main') && '5' || '3' }},GEMINI_RETRY_DELAY=${{ contains(github.ref_name, 'main') && '3' || '2' }}
             --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,GEMINI_MODEL_NAME=GEMINI_MODEL_NAME:latest
 
-      # E2. Ensure Public Access (force IAM policy)
-      - name: Ensure Public Access
-        run: |
-          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
-            --region=${{ env.REGION }} \
-            --member="allUsers" \
-            --role="roles/run.invoker" \
-            --project=${{ env.PROJECT_ID }} \
-            --quiet
-          echo "✅ Public access configured"
-
       # F. Get the service URL and verify deployment
       - name: Get Service URL and Health Check
         run: |

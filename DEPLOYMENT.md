@@ -124,6 +124,36 @@ When you push to `main` or `dev`, GitHub Actions:
 
 **Note**: PORT is automatically set to 8080 by Cloud Run
 
+### Configure Public Access (Manual - Security Best Practice)
+
+After first deployment, configure public access manually via Google Cloud Console or gcloud:
+
+**Option 1: Google Cloud Console**
+1. Go to [Cloud Run Console](https://console.cloud.google.com/run)
+2. Select your service (e.g., `brecha-ai-service-py-prod`)
+3. Click **Security** tab
+4. Under **Authentication**, select **Allow unauthenticated invocations**
+5. Click **Save**
+
+**Option 2: gcloud Command**
+```bash
+# For Production
+gcloud run services add-iam-policy-binding brecha-ai-service-py-prod \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker" \
+  --project=p-brecha-251-219-11-cd
+
+# For Development
+gcloud run services add-iam-policy-binding brecha-ai-service-py-dev \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker" \
+  --project=d-brecha-251-219-11-CD
+```
+
+**Note**: This is done manually for security reasons, requiring explicit authorization for public access.
+
 ---
 
 ## Local Testing
