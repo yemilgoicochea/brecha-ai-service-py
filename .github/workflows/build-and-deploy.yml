@@ -58,12 +58,12 @@ jobs:
           IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:latest"
           
           docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       # D. Push the Image to Artifact Registry
       - name: Push Docker Image to Artifact Registry
         run: |
-          docker push ${{ env.IMAGE_TAG }}
+          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:${{ github.sha }}"
+          docker push $IMAGE_TAG
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:latest
 
       # E. Deploy to Cloud Run
@@ -72,7 +72,7 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: ${{ env.IMAGE_TAG }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:${{ github.sha }}
           project_id: ${{ env.PROJECT_ID }}
           flags: |
             --service-account=${{ env.GCP_SA_EMAIL }}
@@ -86,7 +86,7 @@ jobs:
             --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,GEMINI_MODEL_NAME=GEMINI_MODEL_NAME:latest
 
       # F. Get the service URL and verify deployment
-      - name: Get Service URL
+      - name: Get Service URL and Health Check
         run: |
           SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --platform managed \
@@ -94,10 +94,7 @@ jobs:
             --project ${{ env.PROJECT_ID }} \
             --format 'value(status.url)')
           echo "Service deployed to: $SERVICE_URL"
-          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
-
-      - name: Health Check
-        run: |
+          
           sleep 10
-          curl -f ${{ env.SERVICE_URL }}/health || exit 1
+          curl -f $SERVICE_URL/health || exit 1
           echo "Health check passed!"
