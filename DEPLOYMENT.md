@@ -36,7 +36,22 @@ Para que el workflow de CI/CD funcione correctamente, necesitas configurar los s
 
 ## Configuración en Google Cloud
 
-### 1. Crear Secretos en Secret Manager
+### 1. Habilitar APIs Necesarias
+
+```bash
+export PROJECT_ID="p-brecha-251-219-11-cd"
+
+# Habilitar Secret Manager API (IMPORTANTE)
+gcloud services enable secretmanager.googleapis.com --project=$PROJECT_ID
+
+# Habilitar Cloud Run API
+gcloud services enable run.googleapis.com --project=$PROJECT_ID
+
+# Habilitar Artifact Registry API
+gcloud services enable artifactregistry.googleapis.com --project=$PROJECT_ID
+```
+
+### 2. Crear Secretos en Secret Manager
 
 ```bash
 # Configurar variables de entorno
@@ -123,17 +138,20 @@ docker stop brecha-ai-test
 
 ## Solución de Problemas
 
+### Error: "Secret Manager API has not been used in project"
+- **Causa**: La API de Secret Manager no está habilitada
+- **Solución**: Ejecuta:
+  ```bash
+  gcloud services enable secretmanager.googleapis.com --project=p-brecha-251-219-11-cd
+  ```
+
+### Error: "Setting IAM policy failed"
+- **Causa**: La Service Account no tiene permisos para acceder a los secretos
+- **Solución**: Ejecuta los comandos de permiso en la sección "Dar permisos a la Service Account"
+
 ### Error: "Context access might be invalid: GCP_SA_KEY"
 - **Causa**: El secreto no está configurado en GitHub
 - **Solución**: Agrega el secreto en GitHub → Settings → Secrets
-
-### Error: "failed to deploy: PORT is reserved"
-- **Causa**: PORT es una variable reservada en Cloud Run
-- **Solución**: Ya está corregida en el workflow (no se incluye PORT en set-env-vars)
-
-### Error: "failed to deploy: SECRET not found"
-- **Causa**: El secreto no existe en Google Cloud Secret Manager
-- **Solución**: Crea los secretos con los comandos en la sección "Configuración en Google Cloud"
 
 ## Variables de Entorno en Cloud Run
 
