@@ -1,190 +1,199 @@
-# Guía de Despliegue - Brecha AI Service
+# Deployment Guide - Brecha AI Service
 
-## Configuración de GitHub Secrets
+## Table of Contents
+1. [GitHub Secrets Configuration](#github-secrets-configuration)
+2. [Google Cloud Setup](#google-cloud-setup)
+3. [Deployment Flow](#deployment-flow)
+4. [Local Testing](#local-testing)
+5. [Troubleshooting](#troubleshooting)
 
-Para que el workflow de CI/CD funcione correctamente, necesitas configurar los siguientes secretos en tu repositorio de GitHub:
+---
 
-### Pasos para agregar secretos:
+## GitHub Secrets Configuration
 
-1. Ve a tu repositorio en GitHub
-2. Haz clic en **Settings** → **Secrets and variables** → **Actions**
-3. Haz clic en **New repository secret** y agrega cada uno:
+To make the CI/CD workflow function correctly, configure the following secret in your GitHub repository:
 
-### Secretos Requeridos:
+### Steps to add secret:
 
-#### 1. `GCP_SA_KEY` (Obligatorio)
-- **Descripción**: Clave JSON de la cuenta de servicio de Google Cloud
-- **Valor**: Contenido completo del archivo JSON de tu Service Account
-- **Cómo obtenerlo**:
-  ```bash
-  gcloud iam service-accounts keys create key.json \
-    --iam-account=github-ci-service@YOUR-PROJECT-ID.iam.gserviceaccount.com
-  
-  # Luego copia el contenido de key.json
-  cat key.json
-  ```
+1. Go to your GitHub repository
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add `GCP_SA_KEY` with the full JSON contents of your Service Account key
 
-#### 2. `GEMINI_API_KEY` (Obligatorio)
-- **Descripción**: Clave API de Google Gemini
-- **Valor**: Tu clave API de Gemini
-- **Nota**: También se debe crear como secreto en Google Cloud Secret Manager
+---
 
-#### 3. `GEMINI_MODEL_NAME` (Obligatorio)
-- **Descripción**: Nombre del modelo Gemini a usar
-- **Valor Típico**: `gemini-2.0-flash-exp`
-- **Nota**: También se debe crear como secreto en Google Cloud Secret Manager
+## Google Cloud Setup
 
-## Configuración en Google Cloud
-
-### 1. Habilitar APIs Necesarias
+### 1. Enable Required APIs
 
 ```bash
 export PROJECT_ID="p-brecha-251-219-11-cd"
 
-# Habilitar Secret Manager API (IMPORTANTE)
+# Enable Secret Manager API (IMPORTANT - required for secrets)
 gcloud services enable secretmanager.googleapis.com --project=$PROJECT_ID
 
-# Habilitar Cloud Run API
+# Enable Cloud Run API
 gcloud services enable run.googleapis.com --project=$PROJECT_ID
 
-# Habilitar Artifact Registry API
+# Enable Artifact Registry API
 gcloud services enable artifactregistry.googleapis.com --project=$PROJECT_ID
 ```
 
-### 2. Crear Secretos en Secret Manager
+### 2. Create Secrets in Secret Manager
 
 ```bash
-# Configurar variables de entorno
-export PROJECT_ID="p-brecha-251-219-11-cd"
-export REGION="us-central1"
+PROJECT_ID="p-brecha-251-219-11-cd"
 
-# Crear secreto para GEMINI_API_KEY
+# Create GEMINI_API_KEY secret
 echo -n "your-gemini-api-key-here" | gcloud secrets create GEMINI_API_KEY \
   --data-file=- \
-  --project=$PROJECT_ID
+  --project=$PROJECT_ID \
+  --replication-policy="automatic"
 
-# Crear secreto para GEMINI_MODEL_NAME
+# Create GEMINI_MODEL_NAME secret
 echo -n "gemini-2.0-flash-exp" | gcloud secrets create GEMINI_MODEL_NAME \
   --data-file=- \
-  --project=$PROJECT_ID
+  --project=$PROJECT_ID \
+  --replication-policy="automatic"
 ```
 
-### 2. Verificar que los secretos están creados
+### 3. Grant Permissions to Service Account
 
 ```bash
-gcloud secrets list --project=$PROJECT_ID
-```
+PROJECT_ID="p-brecha-251-219-11-cd"
+SERVICE_ACCOUNT="github-ci-service@${PROJECT_ID}.iam.gserviceaccount.com"
 
-### 3. Dar permisos a la Service Account
-
-```bash
-# Para GEMINI_API_KEY
+# Grant Secret Manager Secret Accessor role for GEMINI_API_KEY
 gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
-  --member=serviceAccount:github-ci-service@p-brecha-251-219-11-cd.iam.gserviceaccount.com \
+  --member=serviceAccount:$SERVICE_ACCOUNT \
   --role=roles/secretmanager.secretAccessor \
   --project=$PROJECT_ID
 
-# Para GEMINI_MODEL_NAME
+# Grant Secret Manager Secret Accessor role for GEMINI_MODEL_NAME
 gcloud secrets add-iam-policy-binding GEMINI_MODEL_NAME \
-  --member=serviceAccount:github-ci-service@p-brecha-251-219-11-cd.iam.gserviceaccount.com \
+  --member=serviceAccount:$SERVICE_ACCOUNT \
   --role=roles/secretmanager.secretAccessor \
   --project=$PROJECT_ID
 ```
 
-## Flujo de Despliegue
-
-### Rama `main` → Production
-- **Proyecto**: `p-brecha-251-219-11-cd`
-- **Servicio**: `brecha-ai-service-py-prod`
-- **Región**: `us-central1`
-- **Ambiente**: `production`
-
-### Rama `dev` → Development
-- **Proyecto**: `d-brecha-251-219-11-CD`
-- **Servicio**: `brecha-ai-service-py-dev`
-- **Región**: `us-central1`
-- **Ambiente**: `development`
-
-## Verificación Local Antes de Desplegar
+### 4. Verify Configuration
 
 ```bash
-# 1. Construir la imagen Docker
+# List all secrets
+gcloud secrets list --project=$PROJECT_ID
+
+# Verify permissions
+gcloud secrets get-iam-policy GEMINI_API_KEY --project=$PROJECT_ID
+gcloud secrets get-iam-policy GEMINI_MODEL_NAME --project=$PROJECT_ID
+```
+
+---
+
+## Deployment Flow
+
+### Branch-based Strategy
+
+| Branch | Environment | Project | Service Name |
+|--------|-------------|---------|--------------|
+| `main` | production | `p-brecha-251-219-11-cd` | `brecha-ai-service-py-prod` |
+| `dev` | development | `d-brecha-251-219-11-CD` | `brecha-ai-service-py-dev` |
+
+### Automatic Deployment Steps
+
+When you push to `main` or `dev`, GitHub Actions:
+
+1. **Builds** Docker image and tags with commit SHA
+2. **Pushes** to Artifact Registry
+3. **Deploys** to Cloud Run with:
+   - Environment variables (ENVIRONMENT, LOG_LEVEL, etc.)
+   - Secrets from Secret Manager (GEMINI_API_KEY, GEMINI_MODEL_NAME)
+4. **Verifies** deployment with health check
+
+### Environment Variables in Cloud Run
+
+**Public Variables (set-env-vars):**
+- ENVIRONMENT: production or development
+- LOG_LEVEL: INFO or DEBUG
+- ALLOWED_ORIGINS: *
+- GEMINI_MAX_RETRIES: 5 (prod) or 3 (dev)
+- GEMINI_RETRY_DELAY: 3 (prod) or 2 (dev)
+
+**Secret Variables (set-secrets):**
+- GEMINI_API_KEY: From Secret Manager
+- GEMINI_MODEL_NAME: From Secret Manager
+
+**Note**: PORT is automatically set to 8080 by Cloud Run
+
+---
+
+## Local Testing
+
+### Build and Run Docker Image
+
+```bash
+# Build the image
 docker build -t brecha-ai-service-py:latest .
 
-# 2. Crear archivo .env para pruebas
-cat > .env.test << EOF
-ENVIRONMENT=development
-PORT=8080
-LOG_LEVEL=DEBUG
-ALLOWED_ORIGINS=*
-GEMINI_API_KEY=your-test-key
-GEMINI_MODEL_NAME=gemini-2.0-flash-exp
-GEMINI_MAX_RETRIES=3
-GEMINI_RETRY_DELAY=2
-EOF
-
-# 3. Ejecutar el contenedor
+# Run the container
 docker run -d --rm -p 8080:8080 \
-  --env-file .env.test \
+  --env-file .env \
   --name brecha-ai-test \
   brecha-ai-service-py:latest
 
-# 4. Verificar health check
+# Test the health check
 curl http://localhost:8080/health
 
-# 5. Detener el contenedor
+# View logs
+docker logs brecha-ai-test
+
+# Stop the container
 docker stop brecha-ai-test
 ```
 
-## Solución de Problemas
+---
+
+## Troubleshooting
 
 ### Error: "Secret Manager API has not been used in project"
-- **Causa**: La API de Secret Manager no está habilitada
-- **Solución**: Ejecuta:
-  ```bash
-  gcloud services enable secretmanager.googleapis.com --project=p-brecha-251-219-11-cd
-  ```
+- **Cause**: Secret Manager API is not enabled
+- **Solution**: Run the "Enable Required APIs" commands above
+- **Note**: Wait 1-2 minutes for propagation after enabling
 
-### Error: "Setting IAM policy failed"
-- **Causa**: La Service Account no tiene permisos para acceder a los secretos
-- **Solución**: Ejecuta los comandos de permiso en la sección "Dar permisos a la Service Account"
+### Error: "Permission denied on secret"
+- **Cause**: Service account doesn't have access to the secret
+- **Solution**: Run the "Grant Permissions" commands above
+- **Note**: Wait 1-2 minutes for permissions to propagate
 
 ### Error: "Context access might be invalid: GCP_SA_KEY"
-- **Causa**: El secreto no está configurado en GitHub
-- **Solución**: Agrega el secreto en GitHub → Settings → Secrets
+- **Cause**: The GitHub secret is not configured
+- **Solution**: Add `GCP_SA_KEY` to GitHub Settings → Secrets and variables → Actions
 
-## Variables de Entorno en Cloud Run
+### Check Service Status
 
-### Variables de Entorno (set-env-vars)
-- `ENVIRONMENT`: production o development
-- `LOG_LEVEL`: INFO o DEBUG
-- `ALLOWED_ORIGINS`: *
-- `GEMINI_MAX_RETRIES`: 3 o 5
-- `GEMINI_RETRY_DELAY`: 2 o 3
-
-### Secretos (set-secrets)
-- `GEMINI_API_KEY`: De Secret Manager
-- `GEMINI_MODEL_NAME`: De Secret Manager
-
-**Nota**: `PORT` NO se incluye porque Cloud Run lo establece automáticamente en 8080.
-
-## Monitoreo
-
-### Ver logs del servicio
 ```bash
-gcloud run services logs read brecha-ai-service-py-prod \
+# Describe the service
+gcloud run services describe brecha-ai-service-py-prod \
   --region us-central1 \
   --project p-brecha-251-219-11-cd
+
+# View recent logs
+gcloud run services logs read brecha-ai-service-py-prod \
+  --region us-central1 \
+  --project p-brecha-251-219-11-cd \
+  --limit 50
+
+# Test the service URL
+SERVICE_URL=$(gcloud run services describe brecha-ai-service-py-prod \
+  --region us-central1 \
+  --project p-brecha-251-219-11-cd \
+  --format 'value(status.url)')
+
+curl -f $SERVICE_URL/health
 ```
 
-### Ver métrica de requests
-```bash
-gcloud monitoring read \
-  --filter='metric.type="run.googleapis.com/request_count"' \
-  --project p-brecha-251-219-11-cd
-```
+---
 
-## Recursos Útiles
+## Resources
 
 - [Google Cloud Run Documentation](https://cloud.google.com/run/docs)
 - [GitHub Actions - Google Cloud Auth](https://github.com/google-github-actions/auth)
