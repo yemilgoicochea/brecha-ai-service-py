@@ -118,7 +118,7 @@ TEXTO A CLASIFICAR:
         if s.startswith("```"):
             first_newline = s.find("\n")
             if first_newline != -1:
-                s = s[first_newline + 1:]
+                s = s[first_newline + 1 :]
             if s.endswith("```"):
                 s = s[:-3]
             s = s.strip()
@@ -127,7 +127,7 @@ TEXTO A CLASIFICAR:
         start = s.find("{")
         end = s.rfind("}")
         if start != -1 and end != -1 and end > start:
-            s = s[start:end + 1]
+            s = s[start : end + 1]
 
         # Parse and validate JSON
         obj = json.loads(s)
@@ -151,18 +151,18 @@ TEXTO A CLASIFICAR:
             raise ValueError("Project title cannot be empty")
 
         prompt = self._build_prompt(project_title)
-        
+
         for attempt in range(1, settings.GEMINI_MAX_RETRIES + 1):
             try:
                 logger.info(f"Classification attempt {attempt}/{settings.GEMINI_MAX_RETRIES}")
-                
+
                 response = self.model.generate_content(prompt)
                 text = (response.text or "").strip()
 
                 try:
                     json_clean = self._extract_json_from_response(text)
                     result = json.loads(json_clean)
-                    
+
                     logger.info(f"Classification successful on attempt {attempt}")
                     return result
 

@@ -38,22 +38,22 @@ async def classify_project(request: ClassificationRequest) -> Dict[str, Any]:
     """
     try:
         logger.info(f"Received classification request for title: {request.title[:50]}...")
-        
+
         result = await classifier_service.classify(request.title)
-        
+
         logger.info(f"Classification completed with {len(result.get('labels', []))} labels")
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=result,
         )
-    
+
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
-    
+
     except Exception as e:
         logger.error(f"Classification error: {str(e)}", exc_info=True)
         raise HTTPException(

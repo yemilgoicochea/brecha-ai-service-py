@@ -95,5 +95,5 @@ el servicio tiene como objetivo:
 * desarrollo del pensamiento lógico y matemático, la comunicación, expresión artística y la psicomotricidad.
 * logro de aprendizajes sobre ciencia, humanidades y tecnologías.
 * Implementar estrategias de atención diversificada en función de los ritmos y niveles de aprendizaje, la pluralidad lingüística y cultural.
-"""
+""",
 }

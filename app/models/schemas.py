@@ -40,9 +40,7 @@ class ClassificationRequest(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {
-                    "title": "Mejoramiento del servicio de agua potable en el distrito de San Juan"
-                }
+                {"title": "Mejoramiento del servicio de agua potable en el distrito de San Juan"}
             ]
         }
     }
