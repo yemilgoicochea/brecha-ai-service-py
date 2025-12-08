@@ -53,9 +53,10 @@ A professional FastAPI-based REST API for classifying public infrastructure proj
    cp .env.example .env
    ```
    
-   Edit `.env` and add your Gemini API key:
+   Edit `.env` and add your Gemini credentials:
    ```env
    GEMINI_API_KEY=your-actual-api-key-here
+   GEMINI_MODEL_NAME=gemini-2.0-flash-exp
    ```
 
 5. **Run the application**
@@ -74,12 +75,22 @@ A professional FastAPI-based REST API for classifying public infrastructure proj
 
 ```bash
 # Build the image
-docker build -t brecha-ai-service .
+docker build -t brecha-ai-service-py:latest .
 
 # Run the container
-docker run -p 8080:8080 \
-  -e GEMINI_API_KEY=your-api-key \
-  brecha-ai-service
+docker run -d --rm -p 8080:8080 \
+  --env-file .env \
+  --name brecha-ai-service-test \
+  brecha-ai-service-py:latest
+
+# Check health
+curl http://localhost:8080/health
+
+# View logs
+docker logs brecha-ai-service-test
+
+# Stop the container
+docker stop brecha-ai-service-test
 ```
 
 ### Docker Compose (Optional)
@@ -93,8 +104,8 @@ services:
     build: .
     ports:
       - "8080:8080"
+    env_file: .env
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - ENVIRONMENT=production
     restart: unless-stopped
 ```
@@ -220,9 +231,10 @@ brecha-ai-service-py/
      --description="Brecha AI Service Docker repository"
    ```
 
-4. **Store Gemini API key in Secret Manager:**
+4. **Store Gemini credentials in Secret Manager:**
    ```bash
    echo -n "your-gemini-api-key" | gcloud secrets create GEMINI_API_KEY --data-file=-
+   echo -n "gemini-2.0-flash-exp" | gcloud secrets create GEMINI_MODEL_NAME --data-file=-
    ```
 
 ### Manual Deployment
@@ -231,19 +243,19 @@ brecha-ai-service-py/
 # Set variables
 export PROJECT_ID=your-gcp-project-id
 export REGION=us-central1
-export SERVICE_NAME=brecha-ai-service
+export SERVICE_NAME=brecha-ai-service-py-prod
 
 # Build and push image
-gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/brecha-ai-repo/$SERVICE_NAME
+gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-repo/brecha-ai-service-py
 
 # Deploy to Cloud Run
 gcloud run deploy $SERVICE_NAME \
-  --image $REGION-docker.pkg.dev/$PROJECT_ID/brecha-ai-repo/$SERVICE_NAME \
+  --image $REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-repo/brecha-ai-service-py \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --set-env-vars "ENVIRONMENT=production" \
-  --set-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest" \
+  --set-env-vars "ENVIRONMENT=production,PORT=8080,LOG_LEVEL=INFO,ALLOWED_ORIGINS=*" \
+  --set-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest,GEMINI_MODEL_NAME=GEMINI_MODEL_NAME:latest" \
   --memory 512Mi \
   --cpu 1 \
   --port 8080
@@ -304,7 +316,7 @@ pytest tests/ -v --cov=app --cov-report=term-missing
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` | No |
 | `GEMINI_API_KEY` | Google Gemini API key | - | **Yes** |
-| `GEMINI_MODEL_NAME` | Gemini model to use | `gemini-2.0-flash-exp` | No |
+| `GEMINI_MODEL_NAME` | Gemini model to use | - | **Yes** |
 | `GEMINI_MAX_RETRIES` | Max retry attempts | `3` | No |
 | `GEMINI_RETRY_DELAY` | Retry delay (seconds) | `2` | No |
 

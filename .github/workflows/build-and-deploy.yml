@@ -51,7 +51,7 @@ jobs:
         run: gcloud auth configure-docker --quiet ${{ env.REGION }}-docker.pkg.dev
 
       # C. Build and Tag the Docker Image
-      # C. Build and Tag the Docker Image
+      - name: Build and Tag Docker Image
         run: |
           # Use Artifact Registry path: REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/SERVICE:SHA
           IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:${{ github.sha }}"
