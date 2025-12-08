@@ -1,0 +1,103 @@
+name: Deploy Backend to Cloud Run
+
+# 1. TRIGGERS
+on:
+  push:
+    branches:
+      # Triggers deployment to Development environment
+      - dev
+      # Triggers deployment to Production environment
+      - main
+  workflow_dispatch:
+
+# 2. GLOBAL ENVIRONMENT VARIABLES (Conditional setup based on branch)
+env:
+  # Ternary expression to set project ID based on the branch
+  PROJECT_ID: ${{ contains(github.ref_name, 'main') && 'p-brecha-251-219-11-cd' || 'd-brecha-251-219-11-CD' }}
+  # Ternary expression to set service name based on the branch
+  SERVICE_NAME: ${{ contains(github.ref_name, 'main') && 'brecha-ai-service-py-prod' || 'brecha-ai-service-py-dev' }}
+  REGION: us-central1
+  REPOSITORY: cloud-run-repo
+  GCP_SA_EMAIL: ${{ contains(github.ref_name, 'main') && 'github-ci-service@p-brecha-251-219-11-cd.iam.gserviceaccount.com' || 'github-ci-service@d-brecha-251-219-11-CD.iam.gserviceaccount.com' }}
+
+# 3. JOBS
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    # Permissions required for keyless authentication (ID Token and contents read)
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # A. Authenticate to GCP using the JSON Service Account Key
+      - name: Authenticate to GCP
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # B. Set up gcloud and configure Docker for Artifact Registry
+      - name: Setup Google Cloud CLI and Docker
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker authentication
+        run: gcloud auth configure-docker --quiet ${{ env.REGION }}-docker.pkg.dev
+
+      # C. Build and Tag the Docker Image
+      # C. Build and Tag the Docker Image
+        run: |
+          # Use Artifact Registry path: REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/SERVICE:SHA
+          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:${{ github.sha }}"
+          IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:latest"
+          
+          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # D. Push the Image to Artifact Registry
+      - name: Push Docker Image to Artifact Registry
+        run: |
+          docker push ${{ env.IMAGE_TAG }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/brecha-ai-service-py:latest
+
+      # E. Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE_TAG }}
+          project_id: ${{ env.PROJECT_ID }}
+          flags: |
+            --service-account=${{ env.GCP_SA_EMAIL }}
+            --allow-unauthenticated
+            --memory=512Mi
+            --cpu=1
+            --min-instances=0
+            --max-instances=10
+            --timeout=300
+            --set-env-vars=ENVIRONMENT=${{ contains(github.ref_name, 'main') && 'production' || 'development' }},PORT=8080,LOG_LEVEL=${{ contains(github.ref_name, 'main') && 'INFO' || 'DEBUG' }},ALLOWED_ORIGINS=*,GEMINI_MAX_RETRIES=${{ contains(github.ref_name, 'main') && '5' || '3' }},GEMINI_RETRY_DELAY=${{ contains(github.ref_name, 'main') && '3' || '2' }}
+            --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,GEMINI_MODEL_NAME=GEMINI_MODEL_NAME:latest
+
+      # F. Get the service URL and verify deployment
+      - name: Get Service URL
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --format 'value(status.url)')
+          echo "Service deployed to: $SERVICE_URL"
+          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
+
+      - name: Health Check
+        run: |
+          sleep 10
+          curl -f ${{ env.SERVICE_URL }}/health || exit 1
+          echo "Health check passed!"
