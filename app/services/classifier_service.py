@@ -97,18 +97,25 @@ Ejemplo de formato:
 donde:
 - "labels" es una lista de objetos.
 - "label" es el nombre de la categoría seleccionada.
-- "id": es el identificador numérico único asignado a cada categoría. Debes devolver exactamente el id asociado a la categoría, según la lista de categorías proporcionada en el prompt.
+-"id": es el identificador numérico único asignado a cada categoría. Debes devolver exactamente el id asociado a la categoría, según la lista de categorías proporcionada en el prompt.
 - "confianza": representa el nivel de certeza del modelo sobre la asignación de una categoría. Debe ser un valor numérico entre 0 y 1, donde:
-  * 1.0 indica certeza máxima basada en una alta coincidencia semántica con la definición de la categoría
-  * 0.7 a 0.9 indica coincidencia fuerte pero no absoluta
-  * 0.4 a 0.6 indica coincidencia débil o parcialmente relacionada
-  * < 0.4 indica baja certeza; la categoría probablemente no aplica
-- "justificacion": explica por qué el proyecto fue clasificado en esa categoría usando únicamente la DEFINICIÓN de la categoría. máximo 200 palabras.
+1.0 indica certeza máxima basada en una alta coincidencia semántica con la definición de la categoría,
+0.7 a 0.9 indica coincidencia fuerte pero no absoluta,
+0.4 a 0.6 indica coincidencia débil o parcialmente relacionada,
+< 0.4 indica baja certeza; la categoría probablemente no aplica.
+- "justificacion": explica por qué el proyecto fue clasificado en esa categoria usando unicamente la DEFINICIÓN de la categoria. máximo 200 palabras.
 
-Si no hay categorías aplicables:
+Si el título del proyecto es ambiguo o no coincide con ninguna definición, debes devolver:
 
 {{
-  "labels": []
+  "labels": [
+    {{
+      "label": "NO_CLASIFICADO",
+      "id": 0,
+      "confianza": 0.0,
+      "justificacion": "El texto no es suficiente o no coincide con ninguna categoría."
+    }}
+  ]
 }}
 
 TEXTO A CLASIFICAR:
