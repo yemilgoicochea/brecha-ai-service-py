@@ -1,0 +1,97 @@
+﻿id,nombre,definicion
+1,servicio de alcantarillado u otras formas de disposicion sanitaria de excretas,"Texto describe al menos uno (1) de los siguientes servicios:
+
+1. SERVICIO DE ALCANTARILLADO: incluye al menos uno (1) de los siguientes procesos con aguas residuales:
+   recolección, impulsión, conducción hasta el punto de entrega y tratamiento.
+
+2. SERVICIO DE DISPOSICIÓN SANITARIA DE EXCRETAS: incluye instalaciones intradomiciliarias
+   (como Unidades Básicas Sanitarias - UBS, letrinas, etc.) y/o procesos para la disposición final del agua residual
+   o las excretas."
+2,servicio de agua potable mediante red publica o pileta publica,"comprende al menos uno (1) de los siguientes servicios:
+1. sistema de producción: captación, almacenamiento y conducción de agua cruda, tratamiento y conducción de agua potable.
+2. sistema de distribución: almacenamiento, distribución, entrega y medición al usuario.
+
+comprende instalaciones como:
+1. red pública: conexión domiciliaria.
+2. pileta públicas: punto de abastecimiento de agua potable instalado en el espacio público."
+3,aguas residuales no tratadas,"El servicio de tratamiento de aguas residuales para disposición final incluye instalar, mejorar o ampliar instalaciones que permitan procesos con aguas residuales.
+
+PROCESOS: el servicio comprende uno o ninguno:
+* recolección
+* impulsión o conducción hasta la planta de tratamiento
+* tratamiento o reúso del efluente
+* disposición final
+
+EJEMPLOS DE TECNOLOGÍAS DE TRATAMIENTO INCLUIDAS (no limitativo):
+* PTAR – Plantas de Tratamiento de Aguas Residuales.
+* Biorreactores de membrana (MBR).
+* Ósmosis inversa y ultrafiltración."
+4,m2 de espacios publicos verdes por implementar,"Incluye espacios públicos como los siguientes (no limitativo):
+* Parque
+* Plaza
+* Jardín
+* Alameda
+* Bosque Urbano
+* Zona de Esparcimiento"
+5,servicios de movilidad a traves de pistas y veredas,"El SERVICIO DE MOVILIDAD permite la transitabilidad a través de infraestructura vial.
+
+Ejemplos de infraestructura vial urbana (no limitativo):
+* pista
+* calle
+* pasaje
+* avenida
+* vías urbanas
+* vías principales
+* vereda
+* puente
+* óvalo"
+6,servicio de educacion inicial,"El SERVICIO DE EDUCACIÓN INICIAL atiende a niños menores de 6 años con enfoque intercultural e inclusivo.
+Promueve el desarrollo infantil en dimensiones cognitiva, física, motora, social y emocional.
+
+Incluye la implementación de recursos educativos:
+* infraestructura
+* equipos
+* personal
+* organización
+* capacidad de gestión
+* otros
+
+Servicios complementarios (uno o ninguno):
+* atención en salud
+* nutrición
+* protección
+* acceso al registro legal de identidad
+* servicios de cuidado
+* otros servicios que aseguren condiciones básicas para el desarrollo infantil"
+7,servicio de educacion primaria,"El SERVICIO DE EDUCACIÓN PRIMARIA atiende a niños y niñas desde los 6 años.
+
+Incluye:
+* infraestructura
+* equipos
+* personal
+* organización
+* capacidad de gestión
+
+Objetivos del servicio:
+* desarrollo del pensamiento lógico y matemático
+* comunicación, expresión artística y psicomotricidad
+* aprendizajes en ciencia, humanidades y tecnología
+* estrategias diversificadas según ritmos y niveles de aprendizaje
+* atención a la pluralidad lingüística y cultural"
+8,servicio de educacion secundaria,"El SERVICIO DE EDUCACIÓN SECUNDARIA atiende a adolescentes e incluye:
+
+* infraestructura
+* equipos
+* personal
+* organización
+* capacidad de gestión
+
+Objetivos del servicio:
+* formación humanística, científica y tecnológica
+* capacitación para el trabajo
+* promoción de competencias emprendedoras orientadas al desarrollo de proyectos productivos con uso de tecnologías
+
+NO se considera parte del servicio:
+* Colegios de Alto Rendimiento (COAR)
+
+Nota: II.EE = Instituciones Educativas."

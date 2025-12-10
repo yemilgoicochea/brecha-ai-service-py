@@ -48,8 +48,14 @@ class ClassifierService:
         project_title = str(project_title).strip()
 
         category_text_parts = []
-        for name, definition in DEFINICIONES_DE_CATEGORIAS.items():
-            category_text_parts.append(f"- {name}: {definition.strip()}")
+        for name, category_info in DEFINICIONES_DE_CATEGORIAS.items():
+            category_id = category_info["id"]
+            definition = category_info["definicion"]
+            category_text_parts.append(
+                f"- ID: {category_id}\n"
+                f"  NOMBRE: {name}\n"
+                f"  DEFINICION: {definition.strip()}\n"
+            )
         categories_text = "\n".join(category_text_parts)
 
         prompt = f"""
@@ -66,10 +72,6 @@ REGLAS ESTRICTAS:
 - Analiza el significado del título del proyecto, no solo palabras sueltas.
 - Asigna múltiples categorías solo si el título realmente cubre más de una brecha.
 - No inventes información adicional que no esté presente o inferida razonablemente del título del proyecto.
-- Si el título es ambiguo o no coincide con ninguna definición, devuelve "labels": [].
-
-- Genera un valor "confianza" entre 0.0 y 1.0.
-- Genera una "justificacion" de máximo 200 palabras basada únicamente en las definiciones dadas.
 
 FORMATO DE RESPUESTA (OBLIGATORIO):
 Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin explicaciones, sin backticks.
@@ -79,11 +81,29 @@ Ejemplo de formato:
   "labels": [
     {{
       "label": "NOMBRE_DE_CATEGORIA_1",
+      "id": 1,
       "confianza": 0.95,
+      "justificacion": "Texto de la justificación"
+    }},
+    {{
+      "label": "NOMBRE_DE_CATEGORIA_2",
+      "id": 3,
+      "confianza": 0.98,
       "justificacion": "Texto de la justificación"
     }}
   ]
 }}
+
+donde:
+- "labels" es una lista de objetos.
+- "label" es el nombre de la categoría seleccionada.
+- "id": es el identificador numérico único asignado a cada categoría. Debes devolver exactamente el id asociado a la categoría, según la lista de categorías proporcionada en el prompt.
+- "confianza": representa el nivel de certeza del modelo sobre la asignación de una categoría. Debe ser un valor numérico entre 0 y 1, donde:
+  * 1.0 indica certeza máxima basada en una alta coincidencia semántica con la definición de la categoría
+  * 0.7 a 0.9 indica coincidencia fuerte pero no absoluta
+  * 0.4 a 0.6 indica coincidencia débil o parcialmente relacionada
+  * < 0.4 indica baja certeza; la categoría probablemente no aplica
+- "justificacion": explica por qué el proyecto fue clasificado en esa categoría usando únicamente la DEFINICIÓN de la categoría. máximo 200 palabras.
 
 Si no hay categorías aplicables:
 

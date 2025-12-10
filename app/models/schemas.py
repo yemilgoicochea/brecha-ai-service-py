@@ -9,6 +9,7 @@ class ClassificationLabel(BaseModel):
     """Single classification label with confidence and justification."""
 
     label: str = Field(..., description="Category label name")
+    id: int = Field(..., description="Category ID")
     confianza: float = Field(
         ...,
         ge=0.0,
@@ -73,6 +74,7 @@ class ClassificationResponse(BaseModel):
                     "labels": [
                         {
                             "label": "servicio de agua potable mediante red publica o pileta publica",
+                            "id": 2,
                             "confianza": 0.95,
                             "justificacion": "El título menciona explícitamente 'servicio de agua potable', que corresponde directamente a esta categoría.",
                         }
