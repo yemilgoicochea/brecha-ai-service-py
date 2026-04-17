@@ -13,7 +13,7 @@ on:
 # 2. GLOBAL ENVIRONMENT VARIABLES (Conditional setup based on branch)
 env:
   # Ternary expression to set project ID based on the branch
-  PROJECT_ID: ${{ contains(github.ref_name, 'main') && 'p-brecha-251-219-11-cd' || 'd-brecha-251-219-11-CD' }}
+  PROJECT_ID: ${{ contains(github.ref_name, 'main') && 'p-brecha-251-219-11-cd-493618' || 'd-brecha-251-219-11-CD' }}
   # Ternary expression to set service name based on the branch
   SERVICE_NAME: ${{ contains(github.ref_name, 'main') && 'brecha-ai-service-py-prod' || 'brecha-ai-service-py-dev' }}
   REGION: us-central1
