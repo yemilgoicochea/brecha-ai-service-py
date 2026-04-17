@@ -18,7 +18,7 @@ env:
   SERVICE_NAME: ${{ contains(github.ref_name, 'main') && 'brecha-ai-service-py-prod' || 'brecha-ai-service-py-dev' }}
   REGION: us-central1
   REPOSITORY: cloud-run-repo
-  GCP_SA_EMAIL: ${{ contains(github.ref_name, 'main') && 'github-ci-service@p-brecha-251-219-11-cd.iam.gserviceaccount.com' || 'github-ci-service@d-brecha-251-219-11-CD.iam.gserviceaccount.com' }}
+  GCP_SA_EMAIL: ${{ contains(github.ref_name, 'main') && 'github-ci-service@p-brecha-251-219-11-cd-493618.iam.gserviceaccount.com' || 'github-ci-service@d-brecha-251-219-11-CD.iam.gserviceaccount.com' }}
 
 # 3. JOBS
 jobs:
