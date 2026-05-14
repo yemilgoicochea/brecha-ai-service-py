@@ -3,11 +3,12 @@
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, Field
 
+from app.core.security import get_current_user
 from app.services.auth_service import AuthService
 from app.services.supabase_service import SupabaseService
 
@@ -67,6 +68,7 @@ def build_user_payload(user: Dict[str, Any]) -> Dict[str, Any]:
         "email": user["email"],
         "name": full_name or first_name or user["email"],
         "last_name": last_name,
+        "role": user.get("role_name", "user"),
     }
 
 
@@ -117,7 +119,11 @@ async def register(request: RegisterRequest) -> LoginResponse:
         )
 
         # Create token
-        token = auth_service.create_token({"sub": user["id"], "email": user["email"]})
+        token = auth_service.create_token({
+            "sub": user["id"],
+            "email": user["email"],
+            "role": "user",
+        })
 
         logger.info(f"User registered: {user['id']}")
 
@@ -171,7 +177,11 @@ async def login(request: LoginRequest) -> LoginResponse:
             )
 
         # Create token
-        token = auth_service.create_token({"sub": user["id"], "email": user["email"]})
+        token = auth_service.create_token({
+            "sub": user["id"],
+            "email": user["email"],
+            "role": user.get("role_name", "user"),
+        })
 
         logger.info(f"User logged in: {user['id']}")
 
@@ -189,6 +199,14 @@ async def login(request: LoginRequest) -> LoginResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Login failed",
         )
+
+
+@router.get(
+    "/me",
+    summary="Get current user token payload",
+)
+async def me(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    return current_user
 
 
 @router.post(

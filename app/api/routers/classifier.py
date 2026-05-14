@@ -156,16 +156,27 @@ async def get_query_status(
             "created_at": query_record["created_at"],
         }
 
-        # If completed, include classifications
+        # If completed, include classifications with gap and sector names
         if query_record["status"] == "completed":
             try:
                 classifications_response = (
                     supabase_service.client.table("project_classifications")
-                    .select("*")
+                    .select("id, confidence_score, justification, ranking_position, llm_model, gap_indicator_id, gap_indicators(name, indicator_type, sectors(name))")
                     .eq("project_query_id", query_id)
+                    .order("ranking_position")
                     .execute()
                 )
-                result["classifications"] = classifications_response.data
+                classifications = []
+                for c in classifications_response.data:
+                    gap = c.pop("gap_indicators", None) or {}
+                    sector = gap.pop("sectors", None) or {}
+                    classifications.append({
+                        **c,
+                        "gap_name": gap.get("name"),
+                        "indicator_type": gap.get("indicator_type"),
+                        "sector_name": sector.get("name"),
+                    })
+                result["classifications"] = classifications
             except Exception as e:
                 logger.warning(f"Failed to get classifications: {str(e)}")
 
@@ -257,7 +268,7 @@ async def get_user_history(
         try:
             response = (
                 supabase_service.client.table("project_queries")
-                .select("id, title, description, status, created_at, completed_at")
+                .select("id, title, description, status, created_at, updated_at")
                 .eq("user_id", current_user.get("sub"))
                 .order("created_at", desc=True)
                 .execute()
@@ -278,7 +289,7 @@ async def get_user_history(
                 "description": q.get("description", ""),
                 "status": q["status"],
                 "created_at": q["created_at"],
-                "completed_at": q.get("completed_at"),
+                "completed_at": q.get("updated_at") if q["status"] == "completed" else None,
             }
             for q in queries
         ]

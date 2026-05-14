@@ -85,8 +85,24 @@ class SupabaseService:
             logger.warning(f"Role '{role_name}' not found: {str(e)}")
             return None
 
+    def get_role_name_by_id(self, role_id: int) -> Optional[str]:
+        """Get role name by ID."""
+        if not self.client or not role_id:
+            return None
+        try:
+            response = (
+                self.client.table("roles")
+                .select("name")
+                .eq("id", role_id)
+                .single()
+                .execute()
+            )
+            return response.data["name"]
+        except Exception:
+            return None
+
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        """Get user by email."""
+        """Get user by email, then fetches role name separately."""
         if not self.client:
             return None
 
@@ -98,7 +114,10 @@ class SupabaseService:
                 .single()
                 .execute()
             )
-            return response.data
+            user = response.data
+            if user and user.get("role_id"):
+                user["role_name"] = self.get_role_name_by_id(user["role_id"]) or "user"
+            return user
         except Exception:
             return None
 
