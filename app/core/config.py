@@ -18,11 +18,20 @@ class Settings(BaseSettings):
     # CORS settings
     ALLOWED_ORIGINS: str = "*"
 
-    # Gemini API settings
-    GEMINI_API_KEY: str
-    GEMINI_MODEL_NAME: str
-    GEMINI_MAX_RETRIES: int = 3
-    GEMINI_RETRY_DELAY: int = 2
+    # GCP Pub/Sub settings (NEW)
+    GCP_PROJECT_ID: str = ""
+    PUBSUB_TOPIC_ID: str = "brecha-classification-topic"
+
+    # Supabase settings (NEW)
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+
+    # JWT/Auth settings (NEW)
+    JWT_SECRET: str = "your-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_HOURS: int = 24
+
+    # Gemini API settings are handled by the worker service, not this API
 
     class Config:
         """Pydantic configuration."""

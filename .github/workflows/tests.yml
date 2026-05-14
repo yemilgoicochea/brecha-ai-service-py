@@ -45,9 +45,6 @@ jobs:
         mypy app --ignore-missing-imports || true
 
     - name: Run tests with pytest
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'test-key-for-ci' }}
-        GEMINI_MODEL_NAME: ${{ secrets.GEMINI_MODEL_NAME || 'gemini-2.0-flash-exp' }}
       run: |
         pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml || true
 
