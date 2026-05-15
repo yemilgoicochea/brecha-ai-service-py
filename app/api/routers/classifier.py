@@ -246,6 +246,76 @@ async def list_categories() -> Dict[str, Any]:
         )
 
 
+@router.post(
+    "/query/{query_id}/retry",
+    summary="Retry a failed classification",
+    description="Re-queues an existing query. Only works on completed queries with no results or error queries.",
+)
+async def retry_query(
+    query_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    try:
+        try:
+            response = (
+                supabase_service.client.table("project_queries")
+                .select("*")
+                .eq("id", query_id)
+                .single()
+                .execute()
+            )
+            query_record = response.data
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Query not found")
+
+        if query_record["user_id"] != current_user.get("sub"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+        if query_record["status"] not in ("completed", "error"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only completed or error queries can be retried",
+            )
+
+        # Block retry if classifications already exist
+        existing = (
+            supabase_service.client.table("project_classifications")
+            .select("id", count="exact")
+            .eq("project_query_id", query_id)
+            .execute()
+        )
+        if existing.count and existing.count > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Query already has classifications",
+            )
+
+        supabase_service.client.table("project_queries").update(
+            {"status": "pending", "processing_time_ms": None}
+        ).eq("id", query_id).execute()
+
+        message = {
+            "query_id": query_id,
+            "user_id": current_user.get("sub"),
+            "title": query_record.get("title", ""),
+            "description": query_record.get("description") or "",
+            "metadata": {"source": "retry"},
+        }
+        pubsub_publisher.publish_classification_request(message)
+
+        logger.info(f"Retry queued for query: {query_id}")
+        return {"query_id": query_id, "status": "pending", "message": "Classification retried."}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Retry error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retry classification",
+        )
+
+
 @router.get(
     "/history",
     summary="Get user's classification history",

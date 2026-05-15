@@ -28,6 +28,11 @@ class ClassificationRequest(BaseModel):
         max_length=1000,
         description="Project title to classify",
     )
+    description: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Optional project description for additional context",
+    )
 
     @field_validator("title")
     @classmethod
@@ -41,7 +46,10 @@ class ClassificationRequest(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"title": "Mejoramiento del servicio de agua potable en el distrito de San Juan"}
+                {
+                    "title": "Mejoramiento del servicio de agua potable en el distrito de San Juan",
+                    "description": "Proyecto de infraestructura hídrica para mejorar el acceso al agua potable",
+                }
             ]
         }
     }
