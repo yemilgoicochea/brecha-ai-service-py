@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 class SupabaseService:
     """Service for managing Supabase operations."""
 
+    @staticmethod
+    def _normalize_email(email: str) -> str:
+        """Normalize email for consistent storage and lookups."""
+        return email.strip().upper()
+
     def __init__(self):
         """Initialize Supabase service."""
         try:
@@ -107,10 +112,11 @@ class SupabaseService:
             return None
 
         try:
+            normalized_email = self._normalize_email(email)
             response = (
                 self.client.table("users")
                 .select("*")
-                .eq("email", email)
+                .eq("email", normalized_email)
                 .single()
                 .execute()
             )
@@ -134,8 +140,9 @@ class SupabaseService:
             raise RuntimeError("Supabase not configured")
 
         try:
+            normalized_email = self._normalize_email(email)
             data = {
-                "email": email,
+                "email": normalized_email,
                 "name": name,
                 "last_name": last_name,
                 "password_hash": password_hash,
