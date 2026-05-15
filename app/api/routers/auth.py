@@ -176,6 +176,9 @@ async def login(request: LoginRequest) -> LoginResponse:
                 detail="Invalid credentials",
             )
 
+        # Update last login timestamp
+        supabase_service.update_last_login(user["id"])
+
         # Create token
         token = auth_service.create_token({
             "sub": user["id"],

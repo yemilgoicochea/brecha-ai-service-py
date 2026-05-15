@@ -149,3 +149,17 @@ class SupabaseService:
         except Exception as e:
             logger.error(f"Failed to create user: {str(e)}")
             raise
+
+    def update_last_login(self, user_id: str) -> None:
+        """Update the last_login timestamp for a user."""
+        if not self.client:
+            return
+
+        try:
+            from datetime import datetime, timezone
+            self.client.table("users").update(
+                {"last_login": datetime.now(timezone.utc).isoformat()}
+            ).eq("id", user_id).execute()
+            logger.info(f"Updated last_login for user: {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to update last_login for user {user_id}: {str(e)}")
