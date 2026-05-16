@@ -8,12 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.core.security import get_current_user, require_admin
+from app.services.pubsub_service import PubSubPublisher
 from app.services.supabase_service import SupabaseService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 supabase_service = SupabaseService()
+pubsub_publisher = PubSubPublisher()
 
 
 class GapCreate(BaseModel):
@@ -92,6 +94,32 @@ def _get_government_levels_for_gap(gap_id: int) -> List[Dict[str, Any]]:
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/model/refresh",
+    summary="Refresh AI model catalog",
+    description=(
+        "Publishes a signal to the worker so it reloads the gap indicator catalog "
+        "from the database in-memory, without restarting. Admin only."
+    ),
+)
+async def refresh_model_catalog(
+    admin: Dict[str, Any] = Depends(require_admin),
+) -> Dict[str, Any]:
+    try:
+        message_id = pubsub_publisher.publish_catalog_refresh()
+        logger.info(f"Catalog refresh triggered by admin {admin.get('sub')}")
+        return {
+            "message": "Señal de refresco enviada al worker. El catálogo se actualizará en segundos.",
+            "message_id": message_id,
+        }
+    except Exception as e:
+        logger.error(f"Error triggering catalog refresh: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No se pudo enviar la señal de refresco. Verifica que Pub/Sub esté configurado.",
+        )
 
 
 @router.get(

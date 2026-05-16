@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # GCP Pub/Sub settings (NEW)
     GCP_PROJECT_ID: str = ""
     PUBSUB_TOPIC_ID: str = "brecha-classification-topic"
+    PUBSUB_CATALOG_REFRESH_TOPIC_ID: str = "brecha-catalog-refresh-topic"
 
     # Supabase settings (NEW)
     SUPABASE_URL: str = ""

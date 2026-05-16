@@ -82,7 +82,7 @@ jobs:
             --min-instances=0
             --max-instances=10
             --timeout=300
-            --set-env-vars=ENVIRONMENT=${{ contains(github.ref_name, 'main') && 'production' || 'development' }},LOG_LEVEL=${{ contains(github.ref_name, 'main') && 'INFO' || 'DEBUG' }},ALLOWED_ORIGINS=*,GCP_PROJECT_ID=${{ env.PROJECT_ID }},PUBSUB_TOPIC_ID=brecha-classification-topic
+            --set-env-vars=ENVIRONMENT=${{ contains(github.ref_name, 'main') && 'production' || 'development' }},LOG_LEVEL=${{ contains(github.ref_name, 'main') && 'INFO' || 'DEBUG' }},ALLOWED_ORIGINS=*,GCP_PROJECT_ID=${{ env.PROJECT_ID }},PUBSUB_TOPIC_ID=brecha-classification-topic,PUBSUB_CATALOG_REFRESH_TOPIC_ID=brecha-catalog-refresh-topic
             --set-secrets=SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_KEY=SUPABASE_KEY:latest,JWT_SECRET=JWT_SECRET:latest
 
       # F. Get the service URL and verify deployment
