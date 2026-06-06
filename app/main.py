@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.api.routers import classifier, auth, sectors, gaps
+from app.api.routers import classifier, auth, sectors, gaps, ubigeo
 from app.core.config import settings
 from app.core.logging_config import setup_logging
 
@@ -68,6 +68,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
 app.include_router(classifier.router, prefix="/api/v1", tags=["Clasificación"])
+app.include_router(ubigeo.router, prefix="/api/v1/ubigeo", tags=["Ubigeo"])
 app.include_router(sectors.router, prefix="/api/v1/admin", tags=["Admin - Sectores"])
 app.include_router(gaps.router, prefix="/api/v1/admin", tags=["Admin - Brechas"])
 

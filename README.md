@@ -164,6 +164,17 @@ Ver [dev-documentation.md](../dev-documentation.md) para roles IAM requeridos.
 
 ## Tests
 
+Este proyecto tiene **dos tipos de pruebas independientes**, cada una con su propio reporte HTML:
+
+| Tipo | Herramienta | Propósito | Reporte HTML |
+|------|-------------|-----------|--------------|
+| Cobertura de código | pytest + pytest-cov | Qué líneas se ejecutaron durante los tests | `htmlcov/index.html` |
+| Rendimiento / carga | Locust | Latencia, RPS, errores bajo usuarios concurrentes | `reports/*.html` |
+
+---
+
+## 1. Tests de cobertura (pytest)
+
 **Tecnología:** pytest + FastAPI TestClient + unittest.mock
 
 Los servicios externos (Supabase, Pub/Sub) se mockean — los tests son unitarios/integración sobre la lógica de la API sin necesidad de conexiones reales.
@@ -175,10 +186,73 @@ Los servicios externos (Supabase, Pub/Sub) se mockean — los tests son unitario
 | `test_classify_async.py` | Flujo completo async: submit → `query_id`, polling de estado (pending/completed), clasificaciones en respuesta, historial, retry |
 | `test_admin.py` | Sectores (listar, toggle activo/inactivo), indicadores de brecha (listar, filtros, crear, actualizar, borrado lógico), niveles de gobierno |
 
+### Cobertura alcanzada (referencia)
+
+| Módulo | Cobertura |
+|--------|-----------|
+| `core/security.py` | 100% |
+| `core/config.py` | 100% |
+| `routers/auth.py` | 92% |
+| `routers/classifier.py` | 72% |
+| `routers/gaps.py` | 72% |
+| `routers/sectors.py` | 65% |
+| **Total** | **~70%** |
+
+### Comandos
+
 ```bash
-# Ejecutar todos los tests
+# 1. Activar entorno virtual
+.\venv\Scripts\activate        # Windows
+source venv/bin/activate       # Linux/Mac
+
+# 2. Ejecutar todos los tests
 pytest tests/ -v
 
-# Con reporte de cobertura
+# 3. Reporte de cobertura en terminal
 pytest tests/ -v --cov=app --cov-report=term-missing
+
+# 4. Reporte HTML interactivo → htmlcov/index.html
+pytest tests/ --cov=app --cov-report=html
+start htmlcov\index.html       # Windows — abre en el navegador
+open htmlcov/index.html        # Linux/Mac
 ```
+
+> El reporte HTML muestra qué líneas exactas no están cubiertas (rojo = no ejecutado, verde = ejecutado), archivo por archivo. No mide rendimiento.
+
+---
+
+## 2. Tests de rendimiento (Locust)
+
+**Tecnología:** [Locust](https://locust.io/) — simula usuarios concurrentes reales contra el servicio levantado.
+
+Mide: tiempo de respuesta (p50/p95/p99), RPS, tasa de errores, comportamiento bajo carga.
+
+**Requisito previo:** el servicio debe estar corriendo y debe existir un usuario de prueba en la base de datos. Editar `TEST_USER_EMAIL` y `TEST_USER_PASSWORD` en `locustfile.py` antes de ejecutar.
+
+El flujo simulado por cada usuario virtual:
+1. Login → obtiene JWT
+2. `POST /api/v1/classify` → recibe 202 + `query_id`
+3. Polling `GET /api/v1/query/{query_id}` hasta `completed`
+4. Ocasionalmente: consulta historial, health check, validación con título vacío
+
+### Comandos
+
+```bash
+# Instalar Locust (solo una vez)
+pip install locust
+
+# UI interactiva — abre http://localhost:8089 en el navegador
+# (permite configurar usuarios y duración desde la interfaz)
+locust
+
+# Headless — validación rápida (2 usuarios, 3 min) → reports/validacion.html
+locust --headless --users 2 --spawn-rate 1 --run-time 3m --html=reports/validacion.html
+
+# Headless — carga baja (5 usuarios, 5 min) → reports/carga_baja.html
+locust --headless --users 5 --spawn-rate 1 --run-time 5m --html=reports/carga_baja.html
+
+# Headless — carga media (10 usuarios, 5 min) → reports/carga_media.html
+locust --headless --users 10 --spawn-rate 2 --run-time 5m --html=reports/carga_media.html
+```
+
+> Los reportes HTML de Locust se guardan en `reports/`. La carpeta ya está en `.gitignore`.

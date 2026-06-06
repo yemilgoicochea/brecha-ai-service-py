@@ -33,6 +33,28 @@ class ClassificationRequest(BaseModel):
         max_length=5000,
         description="Optional project description for additional context",
     )
+    ubigeo_code: Optional[str] = Field(
+        None,
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+        description="Código UBIGEO INEI de 6 dígitos (ej: 150101 para Lima)",
+    )
+    department: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Nombre del departamento",
+    )
+    province: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Nombre de la provincia",
+    )
+    district: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Nombre del distrito",
+    )
 
     @field_validator("title")
     @classmethod
@@ -49,6 +71,10 @@ class ClassificationRequest(BaseModel):
                 {
                     "title": "Mejoramiento del servicio de agua potable en el distrito de San Juan",
                     "description": "Proyecto de infraestructura hídrica para mejorar el acceso al agua potable",
+                    "ubigeo_code": "150101",
+                    "department": "LIMA",
+                    "province": "LIMA",
+                    "district": "LIMA",
                 }
             ]
         }

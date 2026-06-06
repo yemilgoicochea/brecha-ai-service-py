@@ -38,20 +38,13 @@ class SupabaseService:
         user_id: str,
         title: str,
         description: Optional[str] = None,
+        ubigeo_code: Optional[str] = None,
+        department: Optional[str] = None,
+        province: Optional[str] = None,
+        district: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        Create a new project query record.
-
-        Args:
-            user_id: UUID of the user
-            title: Project title
-            description: Optional project description
-            metadata: Optional metadata
-
-        Returns:
-            Created query record
-        """
+        """Create a new project query record."""
         if not self.client:
             raise RuntimeError("Supabase not configured")
 
@@ -60,6 +53,10 @@ class SupabaseService:
                 "user_id": user_id,
                 "title": title,
                 "description": description,
+                "ubigeo_code": ubigeo_code,
+                "department": department,
+                "province": province,
+                "district": district,
                 "status": "pending",
                 "metadata": metadata or {},
             }

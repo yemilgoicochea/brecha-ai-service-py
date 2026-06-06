@@ -57,6 +57,10 @@ async def classify_project(
                 user_id=current_user.get("sub"),
                 title=request.title,
                 description=request.description,
+                ubigeo_code=request.ubigeo_code,
+                department=request.department,
+                province=request.province,
+                district=request.district,
                 metadata={"submitted_at": "now()"},
             )
             query_id = query_record["id"]
@@ -74,6 +78,10 @@ async def classify_project(
                 "user_id": current_user.get("sub"),
                 "title": request.title,
                 "description": request.description or "",
+                "ubigeo_code": request.ubigeo_code,
+                "department": request.department,
+                "province": request.province,
+                "district": request.district,
                 "metadata": {"source": "api"},
             }
             pubsub_publisher.publish_classification_request(message)
@@ -154,6 +162,10 @@ async def get_query_status(
             "status": query_record["status"],
             "processing_time_ms": query_record.get("processing_time_ms"),
             "created_at": query_record["created_at"],
+            "ubigeo_code": query_record.get("ubigeo_code"),
+            "department": query_record.get("department"),
+            "province": query_record.get("province"),
+            "district": query_record.get("district"),
         }
 
         # If completed, include classifications with gap and sector names
@@ -338,7 +350,7 @@ async def get_user_history(
         try:
             response = (
                 supabase_service.client.table("project_queries")
-                .select("id, title, description, status, created_at, updated_at")
+                .select("id, title, description, status, ubigeo_code, department, province, district, created_at, updated_at")
                 .eq("user_id", current_user.get("sub"))
                 .order("created_at", desc=True)
                 .execute()
@@ -358,6 +370,10 @@ async def get_user_history(
                 "title": q.get("title", "Sin título"),
                 "description": q.get("description", ""),
                 "status": q["status"],
+                "ubigeo_code": q.get("ubigeo_code"),
+                "department": q.get("department"),
+                "province": q.get("province"),
+                "district": q.get("district"),
                 "created_at": q["created_at"],
                 "completed_at": q.get("updated_at") if q["status"] == "completed" else None,
             }
