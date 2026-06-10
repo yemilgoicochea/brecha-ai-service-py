@@ -71,6 +71,26 @@ async def classify_project(
                 detail="Failed to save query",
             )
 
+        # Determinar zona (urbana/rural) según población del distrito
+        zone_type: str | None = None
+        if request.ubigeo_code:
+            try:
+                ubigeo_row = (
+                    supabase_service.client.table("ubigeos")
+                    .select("population")
+                    .eq("ubigeo_code", request.ubigeo_code)
+                    .single()
+                    .execute()
+                )
+                population = (ubigeo_row.data or {}).get("population")
+                if population is not None:
+                    zone_type = "urbano" if population >= 2000 else "rural"
+                    logger.info(
+                        f"Distrito {request.ubigeo_code}: población={population} → zona={zone_type}"
+                    )
+            except Exception as e:
+                logger.warning(f"No se pudo obtener población para {request.ubigeo_code}: {e}")
+
         # Publish to Pub/Sub for worker processing
         try:
             message = {
@@ -82,6 +102,7 @@ async def classify_project(
                 "department": request.department,
                 "province": request.province,
                 "district": request.district,
+                "zone_type": zone_type,
                 "metadata": {"source": "api"},
             }
             pubsub_publisher.publish_classification_request(message)
@@ -160,6 +181,7 @@ async def get_query_status(
         result = {
             "id": query_record["id"],
             "status": query_record["status"],
+            "classification_status": query_record.get("classification_status"),
             "processing_time_ms": query_record.get("processing_time_ms"),
             "created_at": query_record["created_at"],
             "ubigeo_code": query_record.get("ubigeo_code"),
@@ -350,7 +372,7 @@ async def get_user_history(
         try:
             response = (
                 supabase_service.client.table("project_queries")
-                .select("id, title, description, status, ubigeo_code, department, province, district, created_at, updated_at")
+                .select("id, title, description, status, classification_status, ubigeo_code, department, province, district, created_at, updated_at")
                 .eq("user_id", current_user.get("sub"))
                 .order("created_at", desc=True)
                 .execute()
@@ -370,6 +392,7 @@ async def get_user_history(
                 "title": q.get("title", "Sin título"),
                 "description": q.get("description", ""),
                 "status": q["status"],
+                "classification_status": q.get("classification_status"),
                 "ubigeo_code": q.get("ubigeo_code"),
                 "department": q.get("department"),
                 "province": q.get("province"),
